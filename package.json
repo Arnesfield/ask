@@ -2,8 +2,14 @@
   "name": "@arnesfield/ask",
   "version": "0.0.1",
   "description": "Ask for user input via CLI.",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
+    "start": "npm run build -- -w",
+    "build": "tsc",
+    "prebuild": "rimraf lib",
+    "lint": "eslint . --ext .js,.ts",
+    "lint:fix": "npm run lint -- --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
