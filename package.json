@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/Arnesfield/ask/issues"
   },
-  "homepage": "https://github.com/Arnesfield/ask#readme"
+  "homepage": "https://github.com/Arnesfield/ask#readme",
+  "devDependencies": {
+    "@types/node": "^16.4.6",
+    "@typescript-eslint/eslint-plugin": "^4.28.5",
+    "@typescript-eslint/parser": "^4.28.5",
+    "eslint": "^7.31.0",
+    "rimraf": "^3.0.2"
+  }
 }
