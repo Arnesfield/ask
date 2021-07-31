@@ -2,10 +2,8 @@ import { createInterface, Interface } from 'readline';
 
 export interface AskOptions {
   trim?: boolean;
-  /** List of valid answers. */
-  accept?: string[] | ((answer: string) => boolean);
-  /** List of invalid answers. */
-  refuse?: string[] | ((answer: string) => boolean);
+  /** List of valid answers or a callback that checks if the answer is valid. */
+  accept?: boolean | string[] | ((answer: string) => boolean);
 }
 
 export interface AskCallbackArgs {
@@ -42,21 +40,18 @@ async function main(
     answer = await new Promise(resolve => {
       rl.question(opts.question, resolve);
     });
-    if (opts.trim) {
+    const { trim, accept } = opts;
+    if (trim) {
       answer = answer.trim();
     }
-    // check answer against accept and reject list
+    // check answer if valid
     const doAccept: boolean =
-      typeof opts.accept === 'function'
-        ? opts.accept(answer)
-        : !Array.isArray(opts.accept) || opts.accept.includes(answer);
-    const doRefuse: boolean =
-      typeof opts.refuse === 'function'
-        ? opts.refuse(answer)
-        : Array.isArray(opts.refuse)
-        ? opts.refuse.includes(answer)
-        : false;
-    if (doAccept && !doRefuse) {
+      typeof accept === 'boolean'
+        ? accept
+        : typeof accept === 'function'
+        ? accept(answer)
+        : !Array.isArray(accept) || accept.includes(answer);
+    if (doAccept) {
       break;
     }
   }
