@@ -22,7 +22,7 @@ export type AskCallbackOptions = (
 export interface Ask {
   (question: string, options?: AskOptions): Promise<string>;
   (callback: AskCallbackOptions): Promise<string>;
-  many<T>(callback: (ask: Ask) => T): T;
+  scoped<T>(callback: (ask: Ask) => T): T;
 }
 
 async function main(
@@ -75,7 +75,7 @@ function createAsk(initialRl?: Interface): Ask {
     });
   }
 
-  function many<T>(callback: (ask: Ask) => T): T {
+  function scoped<T>(callback: (ask: Ask) => T): T {
     const rl: Interface =
       initialRl || createInterface(process.stdin, process.stdout);
     const result: T = callback(createAsk(rl));
@@ -90,7 +90,7 @@ function createAsk(initialRl?: Interface): Ask {
   }
 
   const ask: Ask = askFn as Ask;
-  ask.many = many;
+  ask.scoped = scoped;
   return ask;
 }
 
