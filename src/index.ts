@@ -19,10 +19,13 @@ export type AskCallbackOptions = (
   args: AskCallbackArgs
 ) => AskWithQuestionOptions;
 
-export interface Ask {
+export interface AskFunction {
   (question: string, options?: AskOptions): Promise<string>;
   (callback: AskCallbackOptions): Promise<string>;
-  scoped<T>(callback: (ask: Ask) => T): T;
+}
+
+export interface Ask extends AskFunction {
+  scoped<T>(callback: (ask: AskFunction) => T): T;
 }
 
 async function main(
@@ -58,10 +61,11 @@ async function main(
   return answer;
 }
 
-function createAsk(initialRl?: Interface): Ask {
+function createAsk<IsRoot extends boolean>(
+  isRoot: IsRoot,
+  initialRl?: Interface
+): IsRoot extends true ? Ask : AskFunction {
   // close interface only for root ask call
-  const close: boolean = !initialRl;
-
   function askFn(
     question: string | AskCallbackOptions,
     options?: AskOptions
@@ -69,17 +73,17 @@ function createAsk(initialRl?: Interface): Ask {
     const rl: Interface =
       initialRl || createInterface(process.stdin, process.stdout);
     return main(rl, question, options).finally(() => {
-      if (close) {
+      if (isRoot) {
         rl.close();
       }
     });
   }
 
-  function scoped<T>(callback: (ask: Ask) => T): T {
+  function scoped<T>(callback: (ask: AskFunction) => T): T {
     const rl: Interface =
       initialRl || createInterface(process.stdin, process.stdout);
-    const result: T = callback(createAsk(rl));
-    if (close) {
+    const result: T = callback(createAsk(false, rl));
+    if (isRoot) {
       if (result instanceof Promise) {
         result.finally(() => rl.close());
       } else {
@@ -90,10 +94,12 @@ function createAsk(initialRl?: Interface): Ask {
   }
 
   const ask: Ask = askFn as Ask;
-  ask.scoped = scoped;
+  if (isRoot) {
+    ask.scoped = scoped;
+  }
   return ask;
 }
 
-export const ask: Ask = createAsk();
+export const ask: Ask = createAsk(true);
 
 export default ask;
