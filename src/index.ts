@@ -1,14 +1,15 @@
 import { createInterface, Interface } from 'readline';
 
-export interface AskOptions {
-  trim?: boolean;
-  /** List of valid answers or a callback that checks if the answer is valid. */
-  accept?: boolean | string[] | ((answer: string) => boolean);
-}
-
 export interface AskCallbackArgs {
   iteration: number;
   previousAnswer: string;
+}
+
+export interface AskOptions {
+  trim?: boolean;
+  format?(answer: string, args: AskCallbackArgs): string;
+  /** List of valid answers or a callback that checks if the answer is valid. */
+  accept?: boolean | string[] | ((answer: string) => boolean);
 }
 
 export interface AskWithQuestionOptions extends AskOptions {
@@ -36,18 +37,27 @@ async function main(
   let answer: string = '';
   // don't quit until conditions are met
   for (let iteration: number = 0; true; iteration++) {
+    const callbackArgs: AskCallbackArgs = {
+      iteration,
+      previousAnswer: answer
+    };
     const opts: AskWithQuestionOptions =
       typeof question === 'function'
-        ? question({ iteration, previousAnswer: answer })
+        ? question(callbackArgs)
         : { ...options, question };
     answer = await new Promise(resolve => {
       rl.question(opts.question, resolve);
     });
-    const { trim, accept } = opts;
-    if (trim) {
+    // format answer
+    if (opts.trim) {
       answer = answer.trim();
     }
+    if (typeof opts.format === 'function') {
+      answer = opts.format(answer, callbackArgs);
+    }
+
     // check answer if valid
+    const { accept } = opts;
     const doAccept: boolean =
       typeof accept === 'boolean'
         ? accept
