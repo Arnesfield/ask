@@ -27,6 +27,7 @@ export interface AskFunction {
 
 export interface Ask extends AskFunction {
   scoped<T>(callback: (ask: AskFunction) => T): T;
+  use(rl: Interface): Ask;
 }
 
 async function main(
@@ -103,9 +104,14 @@ function createAsk<IsRoot extends boolean>(
     return result;
   }
 
+  function use(rl: Interface): Ask {
+    return createAsk(true, rl);
+  }
+
   const ask: Ask = askFn as Ask;
   if (isRoot) {
     ask.scoped = scoped;
+    ask.use = use;
   }
   return ask;
 }
