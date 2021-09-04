@@ -11,7 +11,10 @@ export interface AskCallbackArgs {
 /** Ask options. */
 export interface AskOptions {
   /** List of valid answers or a callback that checks if the answer is valid. */
-  accept?: boolean | string[] | ((answer: string) => boolean);
+  accept?:
+    | boolean
+    | string[]
+    | ((answer: string) => boolean | Promise<boolean>);
   /** Trims the answer before `format(answer, args)` is called. */
   trim?: boolean;
   /**

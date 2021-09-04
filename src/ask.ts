@@ -46,13 +46,13 @@ async function main(
 
     // check answer if valid
     const { accept } = opts;
-    const doAccept: boolean =
+    const doAccept: boolean | Promise<boolean> =
       typeof accept === 'boolean'
         ? accept
         : typeof accept === 'function'
         ? accept(answer)
         : !Array.isArray(accept) || accept.includes(answer);
-    if (doAccept) {
+    if (doAccept instanceof Promise ? await doAccept : doAccept) {
       break;
     }
   }
