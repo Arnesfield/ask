@@ -114,7 +114,13 @@ export function createAsk<T extends AskProps = { rl: Interface }>(
       }
     }
     if (result instanceof Promise) {
-      result.catch(() => {}).finally(() => rl.close());
+      const promise: Promise<R> = result;
+      return new Promise<R>((resolve, reject) => {
+        promise
+          .then(resolve)
+          .catch(reject)
+          .finally(() => rl.close());
+      }) as typeof result;
     }
     return result;
   };
