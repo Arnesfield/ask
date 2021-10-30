@@ -69,17 +69,19 @@ function createAskFunction(
   rlOrInit: Interface | (() => AskProps),
   close: boolean = true
 ): AskFunction {
-  return (
+  return async (
     question: string | AskCallbackOptions,
     options?: AskOptions
   ): Promise<string> => {
     const rl: Interface =
       typeof rlOrInit === 'function' ? rlOrInit().rl : rlOrInit;
-    const promise: Promise<string> = main(rl, question, options);
-    if (close) {
-      promise.finally(() => rl.close());
+    try {
+      return await main(rl, question, options);
+    } finally {
+      if (close) {
+        rl.close();
+      }
     }
-    return promise;
   };
 }
 
@@ -98,11 +100,17 @@ export function createAsk<T extends AskProps = { rl: Interface }>(
   ask.scoped = <R>(callback: (ask: AskFunction, props: T) => R): R => {
     const props: T = init();
     const { rl } = props;
-    const result: R = callback(createAskFunction(rl, false), props);
+    let result: R | undefined;
+    try {
+      result = callback(createAskFunction(rl, false), props);
+    } finally {
+      // handle possible error for non-async callback
+      if (!(result instanceof Promise)) {
+        rl.close();
+      }
+    }
     if (result instanceof Promise) {
-      result.finally(() => rl.close());
-    } else {
-      rl.close();
+      result.catch(() => {}).finally(() => rl.close());
     }
     return result;
   };
