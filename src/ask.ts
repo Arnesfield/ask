@@ -1,8 +1,8 @@
 import { createInterface, Interface } from 'readline';
 import {
   Ask,
-  AskCallbackArgs,
-  AskCallbackOptions,
+  AskCallback,
+  AskCallbackContext,
   AskFunction,
   AskOptions,
   AskOptionsWithQuestion,
@@ -12,26 +12,27 @@ import {
 /**
  * The main function that runs the `rl.question()` and receives
  * the answer with additional formatting and validation.
- * @param rl The `readline.Interface`.
- * @param question The question or the callback options.
+ * @param props The Ask properties.
+ * @param question The question or callback.
  * @param options Additional options.
  * @returns The answer.
  */
-async function main(
-  rl: Interface,
-  question: string | AskCallbackOptions,
+async function main<T extends AskProps = { rl: Interface }>(
+  props: T,
+  question: string | AskCallback<T>,
   options?: AskOptions
 ): Promise<string> {
+  const { rl } = props;
   let answer: string = '';
   // don't quit until conditions are met
   for (let iteration: number = 0; true; iteration++) {
-    const args: AskCallbackArgs = {
+    const context: AskCallbackContext = {
       iteration,
       previousAnswer: answer
     };
     const opts: AskOptionsWithQuestion =
       typeof question === 'function'
-        ? question(args)
+        ? question(context, props)
         : { ...options, question };
     answer = await new Promise(resolve => {
       rl.question(opts.question, resolve);
@@ -41,7 +42,7 @@ async function main(
       answer = answer.trim();
     }
     if (typeof opts.format === 'function') {
-      answer = opts.format(answer, args);
+      answer = opts.format(answer, context);
     }
 
     // check answer if valid
@@ -61,22 +62,22 @@ async function main(
 
 /**
  * Create an Ask function.
- * @param rlOrInit The `readline.Interface` or an `init` callback.
+ * @param init The `init` callback.
  * @param close Determines if the `readline.Interface` should be closed after the question.
  * @returns The Ask function.
  */
-function createAskFunction(
-  rlOrInit: Interface | (() => AskProps),
+function createAskFunction<T extends AskProps = { rl: Interface }>(
+  init: () => T,
   close: boolean = true
-): AskFunction {
+): AskFunction<T> {
   return async (
-    question: string | AskCallbackOptions,
+    question: string | AskCallback<T>,
     options?: AskOptions
   ): Promise<string> => {
-    const rl: Interface =
-      typeof rlOrInit === 'function' ? rlOrInit().rl : rlOrInit;
+    const props: T = init();
+    const { rl } = props;
     try {
-      return await main(rl, question, options);
+      return await main(props, question, options);
     } finally {
       if (close) {
         rl.close();
@@ -97,12 +98,15 @@ export function createAsk<T extends AskProps = { rl: Interface }>(
 ): Ask<T> {
   const ask = createAskFunction(init) as Ask<T>;
 
-  ask.scoped = <R>(callback: (ask: AskFunction, props: T) => R): R => {
+  ask.scoped = <R>(callback: (ask: AskFunction<T>, props: T) => R): R => {
     const props: T = init();
     const { rl } = props;
     let result: R | undefined;
     try {
-      result = callback(createAskFunction(rl, false), props);
+      result = callback(
+        createAskFunction(() => props, false),
+        props
+      );
     } finally {
       // handle possible error for non-async callback
       if (!(result instanceof Promise)) {
