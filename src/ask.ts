@@ -34,15 +34,20 @@ async function main<T extends AskProps = { rl: Interface }>(
       typeof question === 'function'
         ? question(context, props)
         : { ...options, question };
-    answer = await new Promise(resolve => {
+    const { on } = opts;
+    await on?.('beforeAsk');
+    const input = new Promise<string>(resolve => {
       rl.question(opts.question, resolve);
     });
+    await on?.('ask');
+    answer = await input;
+    await on?.('answer');
     // format answer
     if (opts.trim) {
       answer = answer.trim();
     }
     if (typeof opts.format === 'function') {
-      answer = opts.format(answer, context);
+      answer = opts.format(answer);
     }
 
     // check answer if valid
@@ -53,7 +58,7 @@ async function main<T extends AskProps = { rl: Interface }>(
         : typeof accept === 'function'
         ? accept(answer)
         : !Array.isArray(accept) || accept.includes(answer);
-    if (doAccept instanceof Promise ? await doAccept : doAccept) {
+    if (await doAccept) {
       break;
     }
   }

@@ -8,6 +8,9 @@ export interface AskCallbackContext {
   previousAnswer: string;
 }
 
+/** Ask event. */
+export type AskEvent = 'beforeAsk' | 'ask' | 'answer';
+
 /** Ask options. */
 export interface AskOptions {
   /** List of valid answers or a callback that checks if the answer is valid. */
@@ -20,10 +23,14 @@ export interface AskOptions {
   /**
    * Format the answer.
    * @param answer The answer.
-   * @param context The callback context.
    * @returns The formatted answer.
    */
-  format?(answer: string, context: AskCallbackContext): string;
+  format?(answer: string): string;
+  /**
+   * Handle Ask events.
+   * @param answer The Ask event.
+   */
+  on?(event: AskEvent): void | Promise<void>;
 }
 
 /** Ask options with question. */
@@ -47,17 +54,17 @@ export interface AskCallback<T extends AskProps = { rl: Interface }> {
 export interface AskFunction<T extends AskProps = { rl: Interface }> {
   /**
    * Ask for user input.
+   * @param callback The callback.
+   * @returns The answer.
+   */
+  (callback: AskCallback<T>): Promise<string>;
+  /**
+   * Ask for user input.
    * @param question The question.
    * @param options Additional options.
    * @returns The answer.
    */
   (question: string, options?: AskOptions): Promise<string>;
-  /**
-   * Ask for user input.
-   * @param callback The callback.
-   * @returns The answer.
-   */
-  (callback: AskCallback<T>): Promise<string>;
 }
 
 /** Ask properties. */
