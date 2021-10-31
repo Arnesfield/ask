@@ -112,13 +112,13 @@ export function createAsk<T extends AskProps = { rl: Interface }>(
       }
     }
     if (result instanceof Promise) {
-      const promise: Promise<R> = result;
-      return new Promise<R>((resolve, reject) => {
-        promise
-          .then(resolve)
-          .catch(reject)
-          .finally(() => rl.close());
-      }) as typeof result;
+      return (async () => {
+        try {
+          return await result;
+        } finally {
+          rl.close();
+        }
+      })() as typeof result;
     }
     return result;
   };
